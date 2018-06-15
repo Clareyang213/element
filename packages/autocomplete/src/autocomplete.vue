@@ -10,6 +10,7 @@
     <el-input
       ref="input"
       v-bind="$props"
+      :tabindex="tabindex"
       @compositionstart.native="handleComposition"
       @compositionupdate.native="handleComposition"
       @compositionend.native="handleComposition"
@@ -113,7 +114,8 @@
       debounce: {
         type: Number,
         default: 300
-      }
+      },
+      tabindex: String,
     },
     data() {
       return {

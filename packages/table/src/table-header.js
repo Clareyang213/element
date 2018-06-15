@@ -318,6 +318,10 @@ export default {
       return classes.join(' ');
     },
 
+    toggleFilter() {
+      this.store.commit('toggleFilter');
+    },
+
     toggleAllSelection() {
       this.store.commit('toggleAllSelection');
     },

@@ -31,6 +31,7 @@
         :true-value="trueLabel"
         :false-value="falseLabel"
         v-model="model"
+        :tabindex="tabindex"
         @change="handleChange"
         @focus="focus = true"
         @blur="focus = false">
@@ -41,6 +42,7 @@
         :disabled="isDisabled"
         :value="label"
         :name="name"
+        :tabindex="tabindex"
         v-model="model"
         @change="handleChange"
         @focus="focus = true"
@@ -164,7 +166,8 @@
       id: String, /* 当indeterminate为真时，为controls提供相关连的checkbox的id，表明元素间的控制关系*/
       controls: String, /* 当indeterminate为真时，为controls提供相关连的checkbox的id，表明元素间的控制关系*/
       border: Boolean,
-      size: String
+      size: String,
+      tabindex: String,
     },
 
     methods: {

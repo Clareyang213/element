@@ -51,7 +51,11 @@ const forced = {
   },
   index: {
     renderHeader: function(h, { column }) {
-      return column.label || '#';
+      return (
+        <span class="tms-filter-span" on-click={ this.toggleFilter }>
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAA30lEQVQ4je3SIUuDURjF8d8rwyR+BoOIySqsuWZWGSjIMFhly+IHsCxYxDAGfgK/gHHJYhUVrCIrKsLSwu7Gu8vdO7cZPelyzuF/nwce/kjZ8FE7OX3E1hyMt3brZq2UMzpYRwVPvwAs4w4PkAedYQPXKOOnAJLhFt9owFIu7OEAK2hOmeYc26Hfi0HQxS6qOJwAOUI99LpDMwbBM/Zwhc0o2zFYfT/0RkqB4N5gvYvIb+Ay5GOaBIJXrEZehpdUuQg0k/5BI33hMxWUUmaBjoVLXnSiJGQa6B0fM360uPrNniRAHtpUOQAAAABJRU5ErkJggg==" style="vertical-align: middle;" />
+        </span>
+      );
     },
     renderCell: function(h, { $index, column }) {
       let i = $index + 1;
@@ -180,6 +184,11 @@ export default {
       type: Boolean,
       default: true
     },
+    tmsFilterType: {
+      type: String,
+      default: 'string'
+    },
+    tmsFilterCheckBox: Array,
     index: [Number, Function]
   },
 
@@ -266,6 +275,8 @@ export default {
       filterOpened: false,
       filteredValue: this.filteredValue || [],
       filterPlacement: this.filterPlacement || '',
+      tmsFilterType: this.tmsFilterType || 'string',
+      tmsFilterCheckBox: this.tmsFilterCheckBox || [],
       index: this.index
     });
 

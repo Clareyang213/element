@@ -100,12 +100,14 @@ const TableStore = function(table, initialState = {}) {
     sortProp: null,
     sortOrder: null,
     isAllSelected: false,
+    isFilter: false,
     selection: [],
     reserveSelection: false,
     selectable: null,
     currentRow: null,
     hoverRow: null,
     filters: {},
+    tmsFilters: {},
     expandRows: [],
     defaultExpandAll: false,
     selectOnIndeterminate: false
@@ -122,6 +124,41 @@ TableStore.prototype.mutations = {
   setData(states, data) {
     const dataInstanceChanged = states._data !== data;
     states._data = data;
+
+    let tmsFilterValue = states.tmsFilters ? states.tmsFilters : '';
+    //遍历表格中每一列的过滤参数
+    for (let key in tmsFilterValue){
+        if(key != 'type' && key != 'action'){
+            let fValue = tmsFilterValue[key];
+            //找到列对应的参数
+            let fColumn = states._columns.filter(cObj => {
+                return cObj.property === key;
+            });
+            //该列的过滤类型
+            let tmsFilterType = fColumn[0].tmsFilterType ? fColumn[0].tmsFilterType : 'string';
+            //当过滤框有值时，进行列筛选
+            if(fValue && fValue != null && fValue != ''){
+                data = data.filter(obj => {
+                    if(tmsFilterType == 'string'){
+                        //**字符串类型过滤
+                        return obj[key].indexOf(fValue) > -1
+                    }else if(tmsFilterType == 'number'){
+                        //**数字类型过滤
+                        return obj[key] == fValue
+                    }else if(tmsFilterType == 'checkbox'){
+                        //**复选框类型过滤
+                        let ids = fValue.map(obj => {
+                          return obj.value;
+                        })
+                        return ids.indexOf(obj[key] + '') > -1
+                    }else if(tmsFilterType == 'date'){
+                        //**时间框类型过滤
+                        return obj[key] <= fValue[1] && obj[key] >= fValue[0]
+                    }
+                });
+            }
+        }
+    }
 
     Object.keys(states.filters).forEach((columnId) => {
       const values = states.filters[columnId];
@@ -225,6 +262,63 @@ TableStore.prototype.mutations = {
     Vue.nextTick(() => this.table.updateScrollY());
   },
 
+  tmsFilterChange(states, options) {
+    let { column, values, silent } = options;
+    if (values && !Array.isArray(values)) {
+      values = [values];
+    }
+
+    const prop = column.property;
+    const filters = {};
+
+    if (prop) {
+      states.tmsFilters[column.property] = values;
+      filters[column.columnKey || column.id] = values;
+    }
+
+    let data = states._data;
+
+    let tmsFilterValue = states.tmsFilters ? states.tmsFilters : '';
+    //遍历表格中每一列的过滤参数
+    for (let key in tmsFilterValue){
+        if(key != 'type' && key != 'action'){
+            let fValue = tmsFilterValue[key];
+            //找到列对应的参数
+            let fColumn = states._columns.filter(cObj => {
+                return cObj.property === key;
+            });
+            //该列的过滤类型
+            let tmsFilterType = fColumn[0].tmsFilterType ? fColumn[0].tmsFilterType : 'string';
+            //当过滤框有值时，进行列筛选
+            if(fValue && fValue != null && fValue != '' && data && data.length > 0){
+                data = data.filter(obj => {
+                    if(tmsFilterType == 'string'){
+                        //**字符串类型过滤
+                        return obj[key] && obj[key].indexOf(fValue) > -1
+                    }else if(tmsFilterType == 'number'){
+                        //**数字类型过滤
+                        return obj[key] == fValue
+                    }else if(tmsFilterType == 'checkbox'){
+                        //**复选框类型过滤
+                        let ids = fValue.map(obj => {
+                          return obj.value;
+                        })
+                        return ids.indexOf(obj[key] + '') > -1
+                    }else if(tmsFilterType == 'date'){
+                        //**时间框类型过滤
+                        return obj[key] && obj[key] <= fValue[1] && obj[key] >= fValue[0]
+                    }
+                });
+            }
+        }
+    }
+
+    states.filteredData = data;
+    states.data = sortData(data, states);
+
+    Vue.nextTick(() => this.table.updateScrollY());
+  },
+
   insertColumn(states, column, index, parent) {
     let array = states._columns;
     if (parent) {
@@ -291,6 +385,14 @@ TableStore.prototype.mutations = {
     this.updateAllSelected();
   },
 
+  toggleFilter: debounce(10, function(states) {
+    states.isFilter = states.isFilter ? false : true;
+    if (this.table.$ready) {
+      this.updateColumns(); // hack for dynamics insert column
+      this.scheduleLayout();
+    }
+  }),
+
   toggleAllSelection: debounce(10, function(states) {
     const data = states.data || [];
     if (data.length === 0) return;
@@ -333,6 +435,10 @@ const doFlattenColumns = (columns) => {
     }
   });
   return result;
+};
+
+TableStore.prototype.setIsFilter = function(tmsShowFilter) {
+  this.states.isFilter = tmsShowFilter;
 };
 
 TableStore.prototype.updateColumns = function() {

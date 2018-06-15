@@ -30,6 +30,22 @@
       </table-header>
     </div>
     <div
+      v-show="showFilter"
+      v-mousewheel="handleHeaderFooterMousewheel"
+      class="el-table__header-wrapper el-table__filter-wrapper"
+      ref="filterWrapper">
+      <table-filter
+        ref="tableFilter"
+        :store="store"
+        :border="border"
+        :default-sort="defaultSort"
+        :style="{
+          width: layout.bodyWidth ? layout.bodyWidth + 'px' : ''
+        }">
+          <template slot="slot">12345</template>
+      </table-filter>
+    </div>
+    <div
       class="el-table__body-wrapper"
       ref="bodyWrapper"
       :class="[layout.scrollX ? `is-scrolling-${scrollPosition}` : 'is-scrolling-none']"
@@ -46,7 +62,7 @@
         }">
       </table-body>
       <div
-        v-if="!data || data.length === 0"
+        v-if="!data || data.length === 0 || tableData.length === 0"
         class="el-table__empty-block"
         ref="emptyBlock"
         :style="{
@@ -103,10 +119,28 @@
           }"></table-header>
       </div>
       <div
+        v-show="showFilter"
+        class="el-table__fixed-header-wrapper el-table__fixed-filter-wrapper"
+        ref="fixedFilterWrapper"
+        :style="{
+          top: layout.headerHeight + 'px',
+        }">
+        <table-filter
+          ref="fixedTableFilter"
+          fixed="left"
+          :border="border"
+          :store="store"
+          :style="{
+            width: bodyWidth
+          }">
+            <template slot="slot">12345</template>
+          </table-filter>
+      </div>
+      <div
         class="el-table__fixed-body-wrapper"
         ref="fixedBodyWrapper"
         :style="[{
-          top: layout.headerHeight + 'px'
+          top: layout.headerHeight + layout.filterHeight + 'px'
         },
         fixedBodyHeight]">
         <table-body
@@ -166,10 +200,28 @@
           }"></table-header>
       </div>
       <div
+        v-show="showFilter"
+        class="el-table__fixed-header-wrapper el-table__fixed-filter-wrapper"
+        ref="rightFixedFilterWrapper"
+        :style="{
+          top: layout.headerHeight + 'px',
+        }">
+        <table-filter
+          ref="rightFixedTableFilter"
+          fixed="right"
+          :border="border"
+          :store="store"
+          :style="{
+            width: bodyWidth
+          }">
+            <template slot="slot">12345</template>
+          </table-filter>
+      </div>
+      <div
         class="el-table__fixed-body-wrapper"
         ref="rightFixedBodyWrapper"
         :style="[{
-          top: layout.headerHeight + 'px'
+          top: layout.headerHeight + layout.filterHeight + 'px'
         },
         fixedBodyHeight]">
         <table-body
@@ -206,7 +258,7 @@
       ref="rightFixedPatch"
       :style="{
         width: layout.scrollY ? layout.gutterWidth + 'px' : '0',
-        height: layout.headerHeight + 'px'
+        height: layout.headerHeight + layout.filterHeight + 'px'
       }"></div>
     <div class="el-table__column-resize-proxy" ref="resizeProxy" v-show="resizeProxyVisible"></div>
   </div>
@@ -224,6 +276,7 @@
   import TableBody from './table-body';
   import TableHeader from './table-header';
   import TableFooter from './table-footer';
+  import TableFilter from './table-filter';
 
   let tableIdSeed = 1;
 
@@ -268,6 +321,11 @@
       showHeader: {
         type: Boolean,
         default: true
+      },
+
+      tmsShowFilter: {
+        type: Boolean,
+        default: false
       },
 
       showSummary: Boolean,
@@ -317,6 +375,7 @@
     components: {
       TableHeader,
       TableFooter,
+      TableFilter,
       TableBody,
       ElCheckbox
     },
@@ -389,12 +448,13 @@
       },
 
       bindEvents() {
-        const { headerWrapper, footerWrapper } = this.$refs;
+        const { headerWrapper, footerWrapper, filterWrapper } = this.$refs;
         const refs = this.$refs;
         let self = this;
 
         this.bodyWrapper.addEventListener('scroll', function() {
           if (headerWrapper) headerWrapper.scrollLeft = this.scrollLeft;
+          if (filterWrapper) filterWrapper.scrollLeft = this.scrollLeft;
           if (footerWrapper) footerWrapper.scrollLeft = this.scrollLeft;
           if (refs.fixedBodyWrapper) refs.fixedBodyWrapper.scrollTop = this.scrollTop;
           if (refs.rightFixedBodyWrapper) refs.rightFixedBodyWrapper.scrollTop = this.scrollTop;
@@ -470,6 +530,10 @@
         return this.store.states.selection;
       },
 
+      showFilter() {
+        return this.store.states.isFilter;
+      },
+
       columns() {
         return this.store.states.columns;
       },
@@ -497,10 +561,14 @@
             height: this.layout.bodyHeight ? this.layout.bodyHeight + 'px' : ''
           };
         } else if (this.maxHeight) {
+          let mH = 0;
+          if(this.showHeader){
+            mH = this.maxHeight - this.layout.headerHeight - this.layout.footerHeight - (this.showFilter ? this.layout.filterHeight : 0)
+          }else{
+            mH = this.maxHeight - this.layout.footerHeight - (this.showFilter ? this.layout.filterHeight : 0)
+          }
           return {
-            'max-height': (this.showHeader
-              ? this.maxHeight - this.layout.headerHeight - this.layout.footerHeight
-              : this.maxHeight - this.layout.footerHeight) + 'px'
+            'max-height': mH + 'px'
           };
         }
         return {};
@@ -515,7 +583,7 @@
           let maxHeight = this.layout.scrollX ? this.maxHeight - this.layout.gutterWidth : this.maxHeight;
 
           if (this.showHeader) {
-            maxHeight -= this.layout.headerHeight;
+            maxHeight -= (this.layout.headerHeight + this.showFilter ? this.layout.filterHeight : 0);
           }
 
           maxHeight -= this.layout.footerHeight;
@@ -559,6 +627,10 @@
         }
       },
 
+      tmsShowFilter(val){
+        this.store.setIsFilter(val);
+      },
+
       maxHeight: {
         immediate: true,
         handler(value) {
@@ -598,6 +670,7 @@
 
     mounted() {
       this.bindEvents();
+      this.store.setIsFilter(this.tmsShowFilter);
       this.store.updateColumns();
       this.doLayout();
 
@@ -630,7 +703,8 @@
         store,
         table: this,
         fit: this.fit,
-        showHeader: this.showHeader
+        showHeader: this.showHeader,
+        showFilter: this.showFilter
       });
       return {
         layout,

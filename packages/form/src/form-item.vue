@@ -12,8 +12,14 @@
       <slot name="label">{{label + form.labelSuffix}}</slot>
     </label>
     <div class="el-form-item__content" v-bind:style="contentStyle">
-      <slot></slot>
-      <transition name="el-zoom-in-top">
+      <el-tooltip effect="dark" class="tms-form-item__error"
+        v-if="validateState === 'error' && showMessage && form.showMessage"
+        :content="validateMessage" 
+        placement="top-start">
+        <slot></slot>
+      </el-tooltip>
+      <slot v-else></slot>
+      <!-- <transition name="el-zoom-in-top">
         <div
           v-if="validateState === 'error' && showMessage && form.showMessage"
           class="el-form-item__error"
@@ -25,7 +31,7 @@
         >
           {{validateMessage}}
         </div>
-      </transition>
+      </transition> -->
     </div>
   </div>
 </template>
@@ -130,7 +136,6 @@
           if (path.indexOf(':') !== -1) {
             path = path.replace(/:/, '.');
           }
-
           return getPropByPath(model, path, true).v;
         }
       },
@@ -171,7 +176,12 @@
     methods: {
       validate(trigger, callback = noop) {
         this.validateDisabled = false;
-        const rules = this.getFilteredRule(trigger);
+        let rules = {};
+        if (!trigger || trigger === ''){
+          rules = this.getRules();
+        }else{
+          rules = this.getFilteredRule(trigger);
+        }
         if ((!rules || rules.length === 0) && this.required === undefined) {
           callback();
           return true;
@@ -245,7 +255,7 @@
         const rules = this.getRules();
 
         return rules.filter(rule => {
-          if (!rule.trigger || trigger === '') return true;
+          if (!rule.trigger || trigger === '') return false;
           if (Array.isArray(rule.trigger)) {
             return rule.trigger.indexOf(trigger) > -1;
           } else {

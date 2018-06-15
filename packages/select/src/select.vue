@@ -67,6 +67,7 @@
     <el-input
       ref="reference"
       v-model="selectedLabel"
+      :tabindex="tabindex"
       type="text"
       :placeholder="currentPlaceholder"
       :name="name"
@@ -282,7 +283,8 @@
       popperAppendToBody: {
         type: Boolean,
         default: true
-      }
+      },
+      tabindex: String,
     },
 
     data() {

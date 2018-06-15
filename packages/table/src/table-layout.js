@@ -19,10 +19,11 @@ class TableLayout {
     this.tableHeight = null;
     this.headerHeight = 44; // Table Header Height
     this.appendHeight = 0; // Append Slot Height
+    this.filterHeight = 44; // Table Filter Height
     this.footerHeight = 44; // Table Footer Height
     this.viewportHeight = null; // Table Height - Scroll Bar Height
-    this.bodyHeight = null; // Table Height - Table Header Height
-    this.fixedBodyHeight = null; // Table Height - Table Header Height - Scroll Bar Height
+    this.bodyHeight = null; // Table Height - Table Header Height - Table Filter Height
+    this.fixedBodyHeight = null; // Table Height - Table Header Height - Table Filter Height - Scroll Bar Height
     this.gutterWidth = scrollbarWidth();
 
     for (let name in options) {
@@ -47,6 +48,12 @@ class TableLayout {
       const body = bodyWrapper.querySelector('.el-table__body');
       this.scrollY = body.offsetHeight > this.bodyHeight;
     }
+  }
+
+  updateFilterHeight() {
+    if (!this.table.$ready) return Vue.nextTick(() => this.updateElsHeight());
+    const { headerWrapper, appendWrapper, footerWrapper, filterWrapper } = this.table.$refs;
+    this.filterHeight = !this.store.states.isFilter ? 0 : filterWrapper.offsetHeight;
   }
 
   setHeight(value, prop = 'height') {
@@ -75,18 +82,22 @@ class TableLayout {
 
   updateElsHeight() {
     if (!this.table.$ready) return Vue.nextTick(() => this.updateElsHeight());
-    const { headerWrapper, appendWrapper, footerWrapper } = this.table.$refs;
+    const { headerWrapper, appendWrapper, footerWrapper, filterWrapper } = this.table.$refs;
     this.appendHeight = appendWrapper ? appendWrapper.offsetHeight : 0;
 
     if (this.showHeader && !headerWrapper) return;
     const headerHeight = this.headerHeight = !this.showHeader ? 0 : headerWrapper.offsetHeight;
+    const filterHeight = this.filterHeight = !this.store.states.isFilter ? 0 : filterWrapper.offsetHeight;
     if (this.showHeader && headerWrapper.offsetWidth > 0 && (this.table.columns || []).length > 0 && headerHeight < 2) {
+      return Vue.nextTick(() => this.updateElsHeight());
+    }
+    if (this.store.states.isFilter && filterWrapper.offsetWidth > 0 && (this.table.columns || []).length > 0 && filterHeight < 2) {
       return Vue.nextTick(() => this.updateElsHeight());
     }
     const tableHeight = this.tableHeight = this.table.$el.clientHeight;
     if (this.height !== null && (!isNaN(this.height) || typeof this.height === 'string')) {
       const footerHeight = this.footerHeight = footerWrapper ? footerWrapper.offsetHeight : 0;
-      this.bodyHeight = tableHeight - headerHeight - footerHeight + (footerWrapper ? 1 : 0);
+      this.bodyHeight = tableHeight - headerHeight - footerHeight - filterHeight + (footerWrapper ? 1 : 0) + (filterWrapper ? 1 : 0);
     }
     this.fixedBodyHeight = this.scrollX ? this.bodyHeight - this.gutterWidth : this.bodyHeight;
 
