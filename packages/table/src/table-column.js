@@ -295,7 +295,7 @@ export default {
       };
 
       column.renderCell = function(h, data) {
-        return <div class="cell">{ renderCell(h, data, this._renderProxy) }</div>;
+        return <div class="cell"><span class="tms-table-span">{ renderCell(h, data, this._renderProxy) }</span></div>;
       };
 
       return;
@@ -311,8 +311,8 @@ export default {
       }
 
       return _self.showOverflowTooltip || _self.showTooltipWhenOverflow
-        ? <div class="cell el-tooltip" style={ {width: (data.column.realWidth || data.column.width) - 1 + 'px'} }>{ renderCell(h, data) }</div>
-        : <div class="cell">{ renderCell(h, data) }</div>;
+        ? <div class="cell el-tooltip" style={ {width: (data.column.realWidth || data.column.width) - 1 + 'px'} }><span class="tms-table-span">{ renderCell(h, data) }</span></div>
+        : <div class="cell"><span class="tms-table-span">{ renderCell(h, data) }</span></div>;
     };
   },
 
